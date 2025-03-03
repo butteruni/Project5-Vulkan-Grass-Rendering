@@ -1,4 +1,7 @@
 #include <vulkan/vulkan.h>
+#include <chrono>
+#include <iostream>
+#include <string>
 #include "Instance.h"
 #include "Window.h"
 #include "Renderer.h"
@@ -24,7 +27,20 @@ namespace {
     bool rightMouseDown = false;
     double previousX = 0.0;
     double previousY = 0.0;
-
+	double lastTime = 0.0;
+	int frameCount = 0;
+	void updateWindowTitleWithFPS(GLFWwindow* window) {
+		double currentTime = glfwGetTime();
+		frameCount++;
+        if (currentTime - lastTime >= 1.0) {
+            double fps = frameCount / (currentTime - lastTime);
+            std::string title = "Vulkan Grass Rendering - FPS: " + std::to_string(static_cast<int>(fps));
+            std::cout << title << std::endl;
+            glfwSetWindowTitle(window, title.c_str());
+            frameCount = 0;
+            lastTime = currentTime;
+        }
+	}
     void mouseDownCallback(GLFWwindow* window, int button, int action, int mods) {
         if (button == GLFW_MOUSE_BUTTON_LEFT) {
             if (action == GLFW_PRESS) {
@@ -67,7 +83,7 @@ namespace {
 
 int main() {
     static constexpr char* applicationName = "Vulkan Grass Rendering";
-    InitializeWindow(640, 480, applicationName);
+    InitializeWindow(1600, 1200, applicationName);
 
     unsigned int glfwExtensionCount = 0;
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -142,11 +158,12 @@ int main() {
     glfwSetWindowSizeCallback(GetGLFWWindow(), resizeCallback);
     glfwSetMouseButtonCallback(GetGLFWWindow(), mouseDownCallback);
     glfwSetCursorPosCallback(GetGLFWWindow(), mouseMoveCallback);
-
+	lastTime = glfwGetTime();
     while (!ShouldQuit()) {
         glfwPollEvents();
         scene->UpdateTime();
         renderer->Frame();
+        updateWindowTitleWithFPS(GetGLFWWindow());
     }
 
     vkDeviceWaitIdle(device->GetVkDevice());
